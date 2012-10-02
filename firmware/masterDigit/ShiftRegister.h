@@ -23,9 +23,10 @@ class ShiftRegister595 : public DigitRenderer {
 		unsigned char dataPin;
 		unsigned char clockPin;
 		unsigned char strobePin;
+		boolean lastDigit;
 
 	public:
-		ShiftRegister595(unsigned char _dataPin, unsigned char _clockPin, unsigned char _strobePin);
+		ShiftRegister595(unsigned char _dataPin, unsigned char _clockPin, unsigned char _strobePin, boolean _lastDigit);
 		~ShiftRegister595();
 		void refresh();
 

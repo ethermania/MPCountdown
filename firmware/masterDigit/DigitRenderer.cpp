@@ -13,12 +13,13 @@ http://creativecommons.org/licenses/by/3.0/
 
 #include "DigitRenderer.h"
 
+static const unsigned char multiplexMask[4] = { 0x05, 0x0A, 0x50, 0xA0 };
 
 DigitRenderer::DigitRenderer() {
 
 	currentValue = 0;
 	renderedValue = 0;
-	bitMask = 1;
+	bitMaskCount = 0;
 	blank = false;
 }
 
@@ -26,7 +27,7 @@ void DigitRenderer::update(unsigned char value) {
 
 	currentValue = value;
 	if ((value >= 0) && (value<=9)) {
-		renderedValue = translate(value);
+		renderedValue = translate(value); 
 	} else
 		renderedValue = 0x00;
 }
@@ -41,13 +42,12 @@ void DigitRenderer::blankDigit(boolean yes) {
 
 void DigitRenderer::refresh() {
 
-	bitMask <<= 1;
-	if (bitMask == 0)
-		bitMask++;
+	bitMaskCount++;
+	bitMaskCount &= 0x03;
 }
 
 unsigned char DigitRenderer::getBitField() {
 
-	return (blank)? 0x00 : (renderedValue & bitMask);
+	return (blank)? 0x00 : (renderedValue & multiplexMask[bitMaskCount]);
 }
 

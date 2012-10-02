@@ -21,7 +21,7 @@ class DigitRenderer {
 	private: 
 		unsigned char currentValue;
 		unsigned char renderedValue;
-		unsigned char bitMask;
+		unsigned char bitMaskCount;
 		boolean blank;
 
 	protected:

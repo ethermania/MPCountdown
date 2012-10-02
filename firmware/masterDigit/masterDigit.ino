@@ -23,15 +23,17 @@ http://creativecommons.org/licenses/by/3.0/
 #define UP_BUTTON	1
 
 #define NUMDIGITS	9
-#define REFRESHTIME	5
+
+#define BUTTONDEBOUNCE  400
+#define BLINKTIME	200
 
 // All digit renderers are stored in an array for easy access
 DigitRenderer* digits[NUMDIGITS];
 
 // Factors needed to convert seconds in DDDHHMMSS
 // and to setup each digit when in set mode
-const unsigned long factors[NUMDIGITS] = { 8640000, 864000, 86400, 36000, 3600, 600, 60, 10, 1 };
-const unsigned long modfactors[NUMDIGITS] = { 10, 10, 10, 3, 4, 6, 10, 6, 10 };
+const unsigned long factors[NUMDIGITS] = { 1, 10, 60, 600, 3600, 36000, 86400, 864000, 8640000 };
+const unsigned long modfactors[NUMDIGITS] = { 10, 6, 10, 6, 4, 3, 10, 10, 10 };
 
 // The time to be shown is stored in seconds
 unsigned long timeCounter;
@@ -44,25 +46,26 @@ unsigned char setupDigit;
 
 // Other required program variables
 unsigned long lastTime;
-unsigned long lastRefreshTime;
+unsigned long buttonDebounceTime[2];
 
 void setup() {
   
 	// Allocate digit renderers
-	digits[0] = new Latched();
-	for (unsigned char i = 1; i < NUMDIGITS; i++) {
-		digits[i] = new ShiftRegister595(DATAPIN,CLOCKPIN,STROBEPIN);
+	for (unsigned char i = 0; i < NUMDIGITS-1; i++) {
+		digits[i] = new ShiftRegister595(DATAPIN,CLOCKPIN,STROBEPIN, (i==(NUMDIGITS-2)));
 	}
+	digits[NUMDIGITS-1] = new Latched();
 
         // Initialize program variables
-	timeCounter = 0;
+	timeCounter = 89073328;
 	countDown = true;
-	runningMode = false;
+	runningMode = true;
 	digitBlank = false;
 	setupDigit = 0;
 
 	lastTime = millis();
-	lastRefreshTime = millis();
+	buttonDebounceTime[0] = millis();
+	buttonDebounceTime[1] = millis();
 
         // Initialilze hardware pins
 	pinMode(CLOCKPIN, OUTPUT);
@@ -84,13 +87,8 @@ void loop() {
 		forceRefresh = setupMode();
 
 	// Digits multiplex refresh
-	long diffRefresh = millis() - lastRefreshTime;
-	if (forceRefresh || (abs(diffRefresh) > REFRESHTIME)) {
-		lastRefreshTime = millis();
-	
-		for (unsigned char i = 0; i < NUMDIGITS; i++)
-			digits[i]->refresh();
-	}
+	for (unsigned char i = 0; i < NUMDIGITS; i++)
+		digits[i]->refresh();
 }
 
 // ----------------------------------------------------------------------------
@@ -145,8 +143,19 @@ boolean setupMode() {
 		for (int i = 0; i < NUMDIGITS; i++)
 			digits[i]->blankDigit(false);
 
+		// ... goes to next digit or...
 		setupDigit++;
 		if (setupDigit == NUMDIGITS) {
+  
+  			// ... to the normal operation...
+  			timeCounter = 0;
+
+  			// ...Calculate the new countdownTime...
+  			for (int i = 0; i < NUMDIGITS; i++) {
+  			  	unsigned long factor = factors[i];
+    			  	unsigned char curDigitVal = digits[i]->getValue();
+      			  	timeCounter += factor * curDigitVal;
+			}
 
 			// ... and starts the normal operation mode
 			lastTime = millis();
@@ -160,26 +169,23 @@ boolean setupMode() {
 
 	// Check if user presses the UP button
 	// and changes the digit value accordingly
-	bool upPressed = checkButton(UP_BUTTON);
+	boolean upPressed = checkButton(UP_BUTTON);
 	if (upPressed) {
   
   		unsigned char currDigitValue = digits[setupDigit]->getValue();
-		unsigned int amount = factors[setupDigit];
-		timeCounter -= currDigitValue * amount;
-		currDigitValue++;
-		if(currDigitValue == modfactors[setupDigit])
-			currDigitValue = 0;
-
-		timeCounter += currDigitValue * amount;
-
-		// Updates the renderers with the new value
-		updateDigits(timeCounter);
+  
+  		currDigitValue++;
+    		if (currDigitValue == modfactors[setupDigit])
+    		    	currDigitValue = 0;    
+  
+		// Updates the renderer with the new value
+		digits[setupDigit]->update(currDigitValue);
 	}
 
 	// Blinks current digit
 	long diff = millis() - lastTime;
-	if (abs(diff) > 1000) {
-		lastTime += 1000;
+	if (abs(diff) > BLINKTIME) {
+		lastTime += BLINKTIME;
 
 		digitBlank = !digitBlank;
 		digits[setupDigit]->blankDigit(digitBlank);
@@ -193,11 +199,17 @@ boolean setupMode() {
 // ----------------------------------------------------------------------------
 
 bool checkButton(unsigned char buttonId) {
+  
+	long diff = millis() - buttonDebounceTime[buttonId];
+	if (abs(diff) > BUTTONDEBOUNCE) {
+  		buttonDebounceTime[buttonId] = millis();
 
-	int buttonVal = analogRead(buttonId);
-	if (buttonVal < 200)
-		return true;
-
+		int buttonVal = analogRead(buttonId);
+		if (buttonVal < 200)
+			return true;
+		else
+			buttonDebounceTime[buttonId]-=BUTTONDEBOUNCE+1;
+	}
 	return false;
 }
 
@@ -205,10 +217,10 @@ bool checkButton(unsigned char buttonId) {
 
 void updateDigits(unsigned long currentTime) {
   
-  for (unsigned char i = 0; i < NUMDIGITS; i++) {
+  for (unsigned char i = NUMDIGITS; i > 0; i--) {
     
-    unsigned char value = (currentTime/factors[i]) % modfactors[i];
-    digits[i]->update(value);
+    unsigned char value = (currentTime/factors[i-1]) % modfactors[i-1];
+    digits[i-1]->update(value);
   }
 }
 

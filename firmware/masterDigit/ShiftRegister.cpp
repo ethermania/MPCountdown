@@ -10,18 +10,41 @@ http://creativecommons.org/licenses/by/3.0/
 
 */
 
-
 #include "Arduino.h"
 #include "ShiftRegister.h"
 
-// From digit number to LED array table conversion
-const unsigned char ShiftRegister595::renderer[10] = { 0xBE, 0x12, 0x7B, 0x76, 0xD8, 0xE6, 0xCE, 0x32, 0xFE, 0xF2, };
+#define S_A  0x01
+#define S_B  0x02
+#define S_C  0x40
+#define S_D  0x20
+#define S_E  0x10
+#define S_F  0x04
+#define S_G  0x08
+#define S_DP 0x80
 
-ShiftRegister595::ShiftRegister595(unsigned char _dataPin, unsigned char _clockPin, unsigned char _strobePin) : DigitRenderer() {
+#define S_0  (S_A | S_B | S_C | S_D | S_E | S_F)
+#define S_1  (S_B | S_C)
+#define S_2  (S_A | S_B | S_G | S_E | S_D)
+#define S_3  (S_A | S_B | S_C | S_G | S_D)
+#define S_4  (S_F | S_B | S_G | S_C)
+#define S_5  (S_A | S_F | S_G | S_C | S_D)
+#define S_6  (S_A | S_F | S_G | S_C | S_D | S_E)
+#define S_7  (S_A | S_B | S_C)
+#define S_8  (S_A | S_B | S_C | S_D | S_E | S_F | S_G)
+#define S_9  (S_A | S_B | S_F | S_G | S_C | S_D)
+
+// From digit number to LED array table conversion
+const unsigned char ShiftRegister595::renderer[10] = { S_0, S_1, S_2, S_3, S_4, S_5, S_6, S_7, S_8, S_9 };
+
+ShiftRegister595::ShiftRegister595(unsigned char _dataPin, unsigned char _clockPin, unsigned char _strobePin, boolean _lastDigit) : DigitRenderer() {
 
 	dataPin = _dataPin;
 	clockPin = _clockPin;
 	strobePin = _strobePin;
+	lastDigit = _lastDigit;
+
+	if (lastDigit)
+		digitalWrite(strobePin, LOW);
 }
 
 ShiftRegister595::~ShiftRegister595() {
@@ -36,9 +59,14 @@ void ShiftRegister595::refresh() {
         
         unsigned char bitField = getBitField();
         
-        digitalWrite(strobePin, LOW);
+        //digitalWrite(strobePin, LOW);
         shiftOut(dataPin, clockPin, LSBFIRST, bitField);
-        digitalWrite(strobePin, HIGH);
+        
+        // The last digit in the chain is responsible for latch the output buffers
+        if (lastDigit) {
+          digitalWrite(strobePin, HIGH);
+          digitalWrite(strobePin, LOW);
+        }
 }
 
 void ShiftRegister595::clock() {
