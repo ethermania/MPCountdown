@@ -28,6 +28,7 @@ class Latched : public DigitRenderer {
 
 	protected:
 		unsigned char translate(unsigned char value);
+		virtual unsigned char translateDp();
 };
 
 #endif /* _LATCHED_H_ */

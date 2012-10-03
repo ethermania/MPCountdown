@@ -54,12 +54,15 @@ unsigned char ShiftRegister595::translate(unsigned char value) {
 	return renderer[value];
 }
 
+unsigned char ShiftRegister595::translateDp() {
+	return S_DP;
+}
+
 void ShiftRegister595::refresh() {
         DigitRenderer::refresh();
         
         unsigned char bitField = getBitField();
         
-        //digitalWrite(strobePin, LOW);
         shiftOut(dataPin, clockPin, LSBFIRST, bitField);
         
         // The last digit in the chain is responsible for latch the output buffers

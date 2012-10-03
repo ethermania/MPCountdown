@@ -32,6 +32,13 @@ void DigitRenderer::update(unsigned char value) {
 		renderedValue = 0x00;
 }
 
+void DigitRenderer::setDp(boolean lit) {
+		if (lit)
+			renderedValue |= translateDp();
+		else
+			renderedValue &= (0xFF ^ translateDp());
+}
+
 unsigned char DigitRenderer::getValue() {
 	return currentValue;
 }

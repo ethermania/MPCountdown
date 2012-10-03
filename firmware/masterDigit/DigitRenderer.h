@@ -26,11 +26,13 @@ class DigitRenderer {
 
 	protected:
 		virtual unsigned char translate(unsigned char value) = 0;
+		virtual unsigned char translateDp() = 0;
 		unsigned char getBitField();
 
 	public:
 		DigitRenderer();
 		void update(unsigned char value);
+		void setDp(boolean lit);
 		unsigned char getValue();
 		void blankDigit(boolean yes);
 		virtual void refresh();

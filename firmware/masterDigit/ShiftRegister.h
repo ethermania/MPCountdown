@@ -32,6 +32,7 @@ class ShiftRegister595 : public DigitRenderer {
 
 	protected:
 		unsigned char translate(unsigned char value);
+		virtual unsigned char translateDp();
 
 	private:
 		void clock();

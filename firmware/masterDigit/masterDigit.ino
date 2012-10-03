@@ -23,6 +23,10 @@ http://creativecommons.org/licenses/by/3.0/
 #define UP_BUTTON	1
 
 #define NUMDIGITS	9
+#define HOURUNITDIGIT   4
+#define HOURTENDIGIT    5
+#define MODE_COUNTDOWN  NUMDIGITS
+#define MODE_RUN	(MODE_COUNTDOWN+1)
 
 #define BUTTONDEBOUNCE  400
 #define BLINKTIME	200
@@ -33,7 +37,7 @@ DigitRenderer* digits[NUMDIGITS];
 // Factors needed to convert seconds in DDDHHMMSS
 // and to setup each digit when in set mode
 const unsigned long factors[NUMDIGITS] = { 1, 10, 60, 600, 3600, 36000, 86400, 864000, 8640000 };
-const unsigned long modfactors[NUMDIGITS] = { 10, 6, 10, 6, 4, 3, 10, 10, 10 };
+const unsigned char modfactors[NUMDIGITS] = { 10, 6, 10, 6, 10, 3, 10, 10, 10 };
 
 // The time to be shown is stored in seconds
 unsigned long timeCounter;
@@ -57,9 +61,9 @@ void setup() {
 	digits[NUMDIGITS-1] = new Latched();
 
         // Initialize program variables
-	timeCounter = 89073328;
+	timeCounter = 0;
 	countDown = true;
-	runningMode = true;
+	runningMode = false;
 	digitBlank = false;
 	setupDigit = 0;
 
@@ -139,13 +143,23 @@ boolean setupMode() {
 	bool modePressed = checkButton(MODE_BUTTON);
 	if (modePressed) {
   
-		// Unblank all digits...
-		for (int i = 0; i < NUMDIGITS; i++)
+		// Unblanks all digits...
+		for (int i = 0; i < NUMDIGITS; i++) {
 			digits[i]->blankDigit(false);
+			digits[i]->setDp(false);
+		}
 
 		// ... goes to next digit or...
 		setupDigit++;
-		if (setupDigit == NUMDIGITS) {
+
+		if (setupDigit == MODE_COUNTDOWN) {
+  
+  			// ... goes to the count up/down mode selection or...
+			digits[0]->setDp(true);
+			digits[NUMDIGITS-1]->setDp(true);
+  		}
+
+		if (setupDigit == MODE_RUN) {
   
   			// ... to the normal operation...
   			timeCounter = 0;
@@ -161,7 +175,6 @@ boolean setupMode() {
 			lastTime = millis();
 			setupDigit = 0;
 			digitBlank = false;
-			countDown = true;
 			runningMode = true;
 			return false;
 		}
@@ -172,14 +185,20 @@ boolean setupMode() {
 	boolean upPressed = checkButton(UP_BUTTON);
 	if (upPressed) {
   
-  		unsigned char currDigitValue = digits[setupDigit]->getValue();
+		if (setupDigit < MODE_COUNTDOWN) {  
   
-  		currDigitValue++;
-    		if (currDigitValue == modfactors[setupDigit])
-    		    	currDigitValue = 0;    
-  
-		// Updates the renderer with the new value
-		digits[setupDigit]->update(currDigitValue);
+    	    		unsigned char currDigitValue = digits[setupDigit]->getValue();
+    
+    	    		currDigitValue++;
+    	     		if (currDigitValue == modfactors[setupDigit])
+    	      		    	currDigitValue = 0;    
+    
+    	  		// Updates the renderer with the new value
+       	  		digits[setupDigit]->update(currDigitValue);
+           	} else if (setupDigit == MODE_COUNTDOWN) {
+             
+           		countDown = !countDown;
+           	}
 	}
 
 	// Blinks current digit
@@ -187,8 +206,15 @@ boolean setupMode() {
 	if (abs(diff) > BLINKTIME) {
 		lastTime += BLINKTIME;
 
+		unsigned char digit = setupDigit;
+		if (setupDigit == MODE_COUNTDOWN) {
+  			if (countDown)
+  				digit = 0;
+  			else
+  				digit = NUMDIGITS-1;
+  		}
 		digitBlank = !digitBlank;
-		digits[setupDigit]->blankDigit(digitBlank);
+		digits[digit]->blankDigit(digitBlank);
 
 		return true;
 	}
@@ -222,6 +248,11 @@ void updateDigits(unsigned long currentTime) {
     unsigned char value = (currentTime/factors[i-1]) % modfactors[i-1];
     digits[i-1]->update(value);
   }
+
+  // Fix hours calculations
+  unsigned char hours = (currentTime/3600) % 24;
+  digits[HOURUNITDIGIT]->update(hours%10);
+  digits[HOURTENDIGIT]->update(hours/10);
 }
 
 
