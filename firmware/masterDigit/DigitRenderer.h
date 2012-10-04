@@ -21,6 +21,7 @@ class DigitRenderer {
 	private: 
 		unsigned char currentValue;
 		unsigned char renderedValue;
+		unsigned char dimmerMode;
 		unsigned char bitMaskCount;
 		boolean blank;
 
@@ -35,6 +36,8 @@ class DigitRenderer {
 		void setDp(boolean lit);
 		unsigned char getValue();
 		void blankDigit(boolean yes);
+
+		void cicleDimmeringMode();
 		virtual void refresh();
 };
 

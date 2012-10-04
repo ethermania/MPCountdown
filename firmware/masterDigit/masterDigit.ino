@@ -110,6 +110,16 @@ boolean normalRun() {
 		return false;
 	}
 
+	// Check if user presses the UP button
+	// and changes the digit value accordingly
+	boolean upPressed = checkButton(UP_BUTTON);
+	if (upPressed) {
+
+ 		// Cicle through possible dimmer modes
+ 		for (unsigned char i = 0; i < NUMDIGITS; i++)
+ 			digits[i]->cicleDimmeringMode();
+	}
+
 	long diff = millis() - lastTime;
 	if (abs(diff) > 1000) {
 		lastTime += 1000;
