@@ -36,6 +36,12 @@ http://creativecommons.org/licenses/by/3.0/
 // From digit number to LED array table conversion
 const unsigned char ShiftRegister595::renderer[10] = { S_0, S_1, S_2, S_3, S_4, S_5, S_6, S_7, S_8, S_9 };
 
+const unsigned char ShiftRegister595::multiplexMask[4][8] = {   { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 },  // One LED at time 
+							   	{ 0x05, 0x0A, 0x50, 0xA0, 0x05, 0x0A, 0x50, 0xA0 },  // Two LEDs at time (default)
+								{ 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA },  // Four LEDs at time
+								{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },  // All LEDs at time
+							};
+
 ShiftRegister595::ShiftRegister595(unsigned char _dataPin, unsigned char _clockPin, unsigned char _strobePin, boolean _lastDigit) : DigitRenderer() {
 
 	dataPin = _dataPin;
@@ -52,6 +58,10 @@ ShiftRegister595::~ShiftRegister595() {
 
 unsigned char ShiftRegister595::translate(unsigned char value) {
 	return renderer[value];
+}
+
+unsigned char ShiftRegister595::getDimmerMask(unsigned char dimmerMode, unsigned char dimmerStep) {
+	return multiplexMask[dimmerMode][dimmerStep];  
 }
 
 unsigned char ShiftRegister595::translateDp() {

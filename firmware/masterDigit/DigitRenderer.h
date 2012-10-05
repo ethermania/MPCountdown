@@ -28,6 +28,7 @@ class DigitRenderer {
 	protected:
 		virtual unsigned char translate(unsigned char value) = 0;
 		virtual unsigned char translateDp() = 0;
+		virtual unsigned char getDimmerMask(unsigned char dimmerMode, unsigned char dimmerStep) = 0;
 		unsigned char getBitField();
 
 	public:

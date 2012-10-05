@@ -20,6 +20,7 @@ class ShiftRegister595 : public DigitRenderer {
 
 	private:
 		static const unsigned char renderer[10];
+		static const unsigned char multiplexMask[4][8];
 		unsigned char dataPin;
 		unsigned char clockPin;
 		unsigned char strobePin;
@@ -32,6 +33,7 @@ class ShiftRegister595 : public DigitRenderer {
 
 	protected:
 		unsigned char translate(unsigned char value);
+		unsigned char getDimmerMask(unsigned char dimmerMode, unsigned char dimmerStep);
 		virtual unsigned char translateDp();
 
 	private:
